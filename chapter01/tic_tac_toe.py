@@ -10,6 +10,7 @@
 
 import numpy as np
 import pickle
+import itertools
 
 BOARD_ROWS = 3
 BOARD_COLS = 3
@@ -193,8 +194,7 @@ class Player:
 
     def set_symbol(self, symbol):
         self.symbol = symbol
-        for hash_val in all_states.keys():
-            (state, is_end) = all_states[hash_val]
+        for hash_val, (state, is_end) in all_states.items():
             if is_end:
                 if state.winner == self.symbol:
                     self.estimations[hash_val] = 1.0
@@ -208,17 +208,11 @@ class Player:
 
     # update value estimation
     def backup(self):
-        # for debug
-        # print('player trajectory')
-        # for state in self.states:
-        #     state.print_state()
+        states = [state.hash() for state in self.states]
 
-        self.states = [state.hash() for state in self.states]
-
-        for i in reversed(range(len(self.states) - 1)):
-            state = self.states[i]
-            td_error = self.greedy[
-                i] * (self.estimations[self.states[i + 1]] - self.estimations[state])
+        for i in range(len(states) - 2, -1, -1):
+            state = states[i]
+            td_error = self.greedy[i] * (self.estimations[states[i + 1]] - self.estimations[state])
             self.estimations[state] += self.step_size * td_error
 
     # choose an action based on the state
