@@ -15,7 +15,9 @@ BOARD_ROWS = 3
 BOARD_COLS = 3
 BOARD_SIZE = BOARD_ROWS * BOARD_COLS
 
+
 class State:
+
     def __init__(self):
         # the board is represented by an n * n array,
         # 1 represents a chessman of the player who moves first,
@@ -42,18 +44,18 @@ class State:
             return self.end
         results = []
         # check row
-        for i in range(0, BOARD_ROWS):
+        for i in range(BOARD_ROWS):
             results.append(np.sum(self.data[i, :]))
         # check columns
-        for i in range(0, BOARD_COLS):
+        for i in range(BOARD_COLS):
             results.append(np.sum(self.data[:, i]))
 
         # check diagonals
         results.append(0)
-        for i in range(0, BOARD_ROWS):
+        for i in range(BOARD_ROWS):
             results[-1] += self.data[i, i]
         results.append(0)
-        for i in range(0, BOARD_ROWS):
+        for i in range(BOARD_ROWS):
             results[-1] += self.data[i, BOARD_ROWS - 1 - i]
 
         for result in results:
@@ -85,12 +87,15 @@ class State:
         new_state.data[i, j] = symbol
         return new_state
 
-    # print the board
     def print_state(self):
-        for i in range(0, BOARD_ROWS):
-            print('-------------')
+        print(self)
+
+    def __repr__(self):
+        result = "\n"
+        for i in range(BOARD_ROWS):
+            result += '-------------\n'
             out = '| '
-            for j in range(0, BOARD_COLS):
+            for j in range(BOARD_COLS):
                 if self.data[i, j] == 1:
                     token = '*'
                 if self.data[i, j] == 0:
@@ -98,20 +103,24 @@ class State:
                 if self.data[i, j] == -1:
                     token = 'x'
                 out += token + ' | '
-            print(out)
-        print('-------------')
+            result += out + "\n"
+        result += '-------------\n'
+        return result
+
 
 def get_all_states_impl(current_state, current_symbol, all_states):
-    for i in range(0, BOARD_ROWS):
-        for j in range(0, BOARD_COLS):
+    for i in range(BOARD_ROWS):
+        for j in range(BOARD_COLS):
             if current_state.data[i][j] == 0:
                 newState = current_state.next_state(i, j, current_symbol)
                 newHash = newState.hash()
-                if newHash not in all_states.keys():
+                if newHash not in all_states:
                     isEnd = newState.is_end()
                     all_states[newHash] = (newState, isEnd)
                     if not isEnd:
-                        get_all_states_impl(newState, -current_symbol, all_states)
+                        get_all_states_impl(
+                            newState, -current_symbol, all_states)
+
 
 def get_all_states():
     current_symbol = 1
@@ -124,9 +133,11 @@ def get_all_states():
 # all possible board configurations
 all_states = get_all_states()
 
+
 class Judger:
     # @player1: the player who will move first, its chessman will be 1
     # @player2: another player with a chessman -1
+
     def __init__(self, player1, player2):
         self.p1 = player1
         self.p2 = player2
@@ -141,23 +152,16 @@ class Judger:
         self.p1.reset()
         self.p2.reset()
 
-    def alternate(self):
-        while True:
-            yield self.p1
-            yield self.p2
-
     # @print_state: if True, print each board during the game
     def play(self, print_state=False):
-        alternator = self.alternate()
         self.reset()
         current_state = State()
         self.p1.set_state(current_state)
         self.p2.set_state(current_state)
-        while True:
-            player = next(alternator)
+        for player in itertools.cycle((self.p1, self.p2)):
             if print_state:
                 current_state.print_state()
-            [i, j, symbol] = player.act()
+            i, j, symbol = player.act()
             next_state_hash = current_state.next_state(i, j, symbol).hash()
             current_state, is_end = all_states[next_state_hash]
             self.p1.set_state(current_state)
@@ -167,10 +171,11 @@ class Judger:
                     current_state.print_state()
                 return current_state.winner
 
-# AI player
+
 class Player:
     # @step_size: the step size to update estimations
     # @epsilon: the probability to explore
+
     def __init__(self, step_size=0.1, epsilon=0.1):
         self.estimations = dict()
         self.step_size = step_size
@@ -212,7 +217,8 @@ class Player:
 
         for i in reversed(range(len(self.states) - 1)):
             state = self.states[i]
-            td_error = self.greedy[i] * (self.estimations[self.states[i + 1]] - self.estimations[state])
+            td_error = self.greedy[
+                i] * (self.estimations[self.states[i + 1]] - self.estimations[state])
             self.estimations[state] += self.step_size * td_error
 
     # choose an action based on the state
@@ -224,7 +230,8 @@ class Player:
             for j in range(BOARD_COLS):
                 if state.data[i, j] == 0:
                     next_positions.append([i, j])
-                    next_states.append(state.next_state(i, j, self.symbol).hash())
+                    next_states.append(
+                        state.next_state(i, j, self.symbol).hash())
 
         if np.random.rand() < self.epsilon:
             action = next_positions[np.random.randint(len(next_positions))]
@@ -255,7 +262,10 @@ class Player:
 # | q | w | e |
 # | a | s | d |
 # | z | x | c |
+
+
 class HumanPlayer:
+
     def __init__(self, **kwargs):
         self.symbol = None
         self.keys = ['q', 'w', 'e', 'a', 's', 'd', 'z', 'x', 'c']
@@ -283,6 +293,7 @@ class HumanPlayer:
         j = data % BOARD_COLS
         return (i, j, self.symbol)
 
+
 def train(epochs, print_every_n=500):
     player1 = Player(epsilon=0.01)
     player2 = Player(epsilon=0.01)
@@ -296,12 +307,14 @@ def train(epochs, print_every_n=500):
         if winner == -1:
             player2_win += 1
         if i % print_every_n == 0:
-            print('Epoch %d, player 1 winrate: %.02f, player 2 winrate: %.02f' % (i, player1_win / i, player2_win / i))
+            print('Epoch %d, player 1 winrate: %.02f, player 2 winrate: %.02f' % (
+                i, player1_win / i, player2_win / i))
         player1.backup()
         player2.backup()
         judger.reset()
     player1.save_policy()
     player2.save_policy()
+
 
 def compete(turns):
     player1 = Player(epsilon=0)
@@ -318,10 +331,13 @@ def compete(turns):
         if winner == -1:
             player2_win += 1
         judger.reset()
-    print('%d turns, player 1 win %.02f, player 2 win %.02f' % (turns, player1_win / turns, player2_win / turns))
+    print('%d turns, player 1 win %.02f, player 2 win %.02f' %
+          (turns, player1_win / turns, player2_win / turns))
 
 # The game is a zero sum game. If both players are playing with an optimal strategy, every game will end in a tie.
 # So we test whether the AI can guarantee at least a tie if it goes second.
+
+
 def play():
     while True:
         player1 = HumanPlayer()
@@ -340,4 +356,3 @@ if __name__ == '__main__':
     train(int(1e5))
     compete(int(1e3))
     play()
-
