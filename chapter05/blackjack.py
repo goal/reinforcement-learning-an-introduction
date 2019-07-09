@@ -78,20 +78,17 @@ def play(policy_player, initial_state=None, initial_action=None):
         # generate a random initial state
 
         # initialize cards of player
-        cards = []
         while player_sum < 12:
             # if sum of player is less than 12, always hit
             card = get_card()
-            cards.append(card)
             player_sum += card_value(card)
-        usable_ace_player = (1 in cards)
 
-        # Always use an ace as 11, unless there are two.
-        # If the player's sum is larger than 21, he must hold two aces.
-        if player_sum > 21:
-            assert player_sum == 22
-            # use one Ace as 1 rather than 11
-            player_sum -= 10
+            if player_sum > 21:
+                assert player_sum == 22
+                # card must be ace
+                player_sum -= 10
+            else:
+                usable_ace_player |= (card == 1)
 
         # initialize cards of dealer, suppose dealer will show the first card he gets
         dealer_card1 = get_card()
@@ -142,8 +139,8 @@ def play(policy_player, initial_state=None, initial_action=None):
         player_sum += card_value(card)
         # If the player has a usable ace, use it as 1 to avoid busting and continue.
         while player_sum > 21 and ace_count:
-                player_sum -= 10
-                ace_count -= 1
+            player_sum -= 10
+            ace_count -= 1
         # player busts
         if player_sum > 21:
             return state, -1, player_trajectory
@@ -164,8 +161,8 @@ def play(policy_player, initial_state=None, initial_action=None):
         dealer_sum += card_value(new_card)
         # If the dealer has a usable ace, use it as 1 to avoid busting and continue.
         while dealer_sum > 21 and ace_count:
-                dealer_sum -= 10
-                ace_count -= 1
+            dealer_sum -= 10
+            ace_count -= 1
         # dealer busts
         if dealer_sum > 21:
             return state, 1, player_trajectory
@@ -188,7 +185,7 @@ def monte_carlo_on_policy(episodes):
     states_no_usable_ace = np.zeros((10, 10))
     # initialze counts to 1 to avoid 0 being divided
     states_no_usable_ace_count = np.ones((10, 10))
-    for i in tqdm(range(0, episodes)):
+    for i in tqdm(range(episodes)):
         _, reward, player_trajectory = play(target_policy_player)
         for (usable_ace, player_sum, dealer_card), _ in player_trajectory:
             player_sum -= 12

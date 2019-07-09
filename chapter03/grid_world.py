@@ -75,8 +75,8 @@ def figure_3_2():
     while True:
         # keep iteration until convergence
         new_value = np.zeros(value.shape)
-        for i in range(0, WORLD_SIZE):
-            for j in range(0, WORLD_SIZE):
+        for i in range(WORLD_SIZE):
+            for j in range(WORLD_SIZE):
                 for action in ACTIONS:
                     (next_i, next_j), reward = step([i, j], action)
                     # bellman equation

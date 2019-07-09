@@ -7,12 +7,15 @@
 # declaration at the top                                              #
 #######################################################################
 
-import numpy as np
+from math import exp, factorial
+from functools import lru_cache
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from math import exp, factorial
+
 import seaborn as sns
+import numpy as np
 
 # maximum # of cars in each location
 MAX_CARS = 20
@@ -49,13 +52,9 @@ POISSON_UPPER_BOUND = 11
 
 # Probability for poisson distribution
 # @lam: lambda should be less than 10 for this function
-poisson_cache = dict()
+@lru_cache(maxsize=None)
 def poisson(n, lam):
-    global poisson_cache
-    key = n * 10 + lam
-    if key not in poisson_cache.keys():
-        poisson_cache[key] = exp(-lam) * pow(lam, n) / factorial(n)
-    return poisson_cache[key]
+    return exp(-lam) * pow(lam, n) / factorial(n)
 
 # @state: [# of cars in first location, # of cars in second location]
 # @action: positive if moving cars from first location to second location,
@@ -73,9 +72,10 @@ def expected_return(state, action, state_value, constant_returned_cars):
     returns -= MOVE_CAR_COST * abs(action)
 
     # go through all possible rental requests
-    for rental_request_first_loc in range(0, POISSON_UPPER_BOUND):
-        for rental_request_second_loc in range(0, POISSON_UPPER_BOUND):
+    for rental_request_first_loc in range(POISSON_UPPER_BOUND):
+        for rental_request_second_loc in range(POISSON_UPPER_BOUND):
             # moving cars
+            # TODO: will result be negative???
             num_of_cars_first_loc = int(min(state[0] - action, MAX_CARS))
             num_of_cars_second_loc = int(min(state[1] + action, MAX_CARS))
 
@@ -100,8 +100,8 @@ def expected_return(state, action, state_value, constant_returned_cars):
                 num_of_cars_second_loc = min(num_of_cars_second_loc + returned_cars_second_loc, MAX_CARS)
                 returns += prob * (reward + DISCOUNT * state_value[num_of_cars_first_loc, num_of_cars_second_loc])
             else:
-                for returned_cars_first_loc in range(0, POISSON_UPPER_BOUND):
-                    for returned_cars_second_loc in range(0, POISSON_UPPER_BOUND):
+                for returned_cars_first_loc in range(POISSON_UPPER_BOUND):
+                    for returned_cars_second_loc in range(POISSON_UPPER_BOUND):
                         num_of_cars_first_loc_ = min(num_of_cars_first_loc + returned_cars_first_loc, MAX_CARS)
                         num_of_cars_second_loc_ = min(num_of_cars_second_loc + returned_cars_second_loc, MAX_CARS)
                         prob_ = poisson(returned_cars_first_loc, RETURNS_FIRST_LOC) * \
