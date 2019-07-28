@@ -222,7 +222,7 @@ def figure_6_6():
 
     performace = np.zeros((6, len(step_sizes)))
     for run in range(runs):
-        for ind, step_size in tqdm(list(zip(range(0, len(step_sizes)), step_sizes))):
+        for ind, step_size in tqdm(enumerate(step_sizes)):
             q_sarsa = np.zeros((WORLD_HEIGHT, WORLD_WIDTH, 4))
             q_expected_sarsa = np.copy(q_sarsa)
             q_q_learning = np.copy(q_sarsa)
